@@ -56,6 +56,7 @@ app.get('/acheter/:id', (req, res) => {
         <form action="/acheter/${concert.id}" method="post">
           <input name="nom" placeholder="Ton nom" required />
           <input name="email" type="email" placeholder="Ton email" required />
+          <input name="telephone" type="tel" placeholder="Ton numéro de téléphone" required />
           <input name="quantite" type="number" min="1" max="10" value="1" required />
           <button type="submit">Valider</button>
         </form>
@@ -77,6 +78,7 @@ app.post('/acheter/:id', async (req, res) => {
     date: concert.date,
     nom: req.body.nom,
     email: req.body.email,
+    telephone: req.body.telephone,
     quantite: req.body.quantite,
     timestamp: new Date().toISOString(),
   };
@@ -90,12 +92,12 @@ app.post('/acheter/:id', async (req, res) => {
     artiste: achat.artiste,
     nom: achat.nom,
     email: achat.email,
+    telephone: achat.telephone,
     quantite: achat.quantite,
     date: achat.date,
     timestamp: achat.timestamp,
   });
 
-  // Génère le nom du fichier QR code
   const filename = `${achat.nom.replace(/ /g, "_")}_${Date.now()}.png`;
   const qrDir = path.join(__dirname, 'public/qrcodes');
   if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
@@ -103,15 +105,13 @@ app.post('/acheter/:id', async (req, res) => {
 
   await QRCode.toFile(qrPath, qrData);
 
-  // Construis l'URL publique accessible
   const qrUrl = `https://${HOSTNAME}/qrcodes/${filename}`;
-
-  // Raccourci l'URL pour WhatsApp
   const shortUrl = await shortenUrl(qrUrl);
 
   const whatsappMessage = encodeURIComponent(
     `🎟️ Babi4Show - Billet\n` +
     `Nom : ${achat.nom}\n` +
+    `Téléphone : ${achat.telephone}\n` +
     `Concert : ${achat.artiste}\n` +
     `Date : ${achat.date}\n` +
     `Billets : ${achat.quantite}\n\n` +
@@ -140,5 +140,5 @@ app.post('/acheter/:id', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🟢 Serveur lancé sur le port ${PORT}`);
+  console.log(`🟢 Serveur lancé : http://${HOSTNAME}`);
 });
