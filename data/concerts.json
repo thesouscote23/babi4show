@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "artiste": "Burna Boy",
+    "lieu": "Abidjan - Palais de la Culture",
+    "date": "2025-08-20",
+    "prix": 15000
+  },
+  {
+    "id": 2,
+    "artiste": "Aya Nakamura",
+    "lieu": "Yamoussoukro - Stade",
+    "date": "2025-09-05",
+    "prix": 10000
+  }
+]

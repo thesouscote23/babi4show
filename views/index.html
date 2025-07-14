@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Babi4Show - Concerts à venir</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header>Babi4Show - Billetterie Concerts</header>
+  <div class="container" id="concert-list">
+    <!-- La liste des concerts sera injectée ici par le serveur -->
+  </div>
+  <script>
+    fetch('/api/concerts')
+      .then(res => res.json())
+      .then(concerts => {
+        const container = document.getElementById('concert-list');
+        concerts.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'concert';
+          div.innerHTML = `
+            <h2>${c.artiste}</h2>
+            <p>📍 ${c.lieu}</p>
+            <p>📅 ${c.date}</p>
+            <p>💵 ${c.prix} FCFA</p>
+            <a href="/acheter/${c.id}"><button>Acheter un billet</button></a>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(() => {
+        document.getElementById('concert-list').innerHTML = '<p>Erreur de chargement des concerts.</p>';
+      });
+  </script>
+</body>
+</html>
