@@ -7,15 +7,13 @@ const axios = require('axios');
 
 const app = express();
 
-// Render fournit le port dans process.env.PORT
 const PORT = process.env.PORT || 3000;
-
-// Render fournit l'hostname public dans cette variable
 const HOSTNAME = process.env.RENDER_EXTERNAL_HOSTNAME || `localhost:${PORT}`;
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Fonction pour raccourcir une URL avec is.gd
 async function shortenUrl(longUrl) {
   try {
     const res = await axios.get('https://is.gd/create.php', {
@@ -24,19 +22,22 @@ async function shortenUrl(longUrl) {
     return res.data;
   } catch (err) {
     console.error('Erreur raccourcisseur URL:', err);
-    return longUrl; // Retourne l'URL longue si erreur
+    return longUrl; // En cas d'erreur, retourne l'URL longue
   }
 }
 
+// Route d'accueil : envoie index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views/index.html'));
 });
 
+// API pour récupérer les concerts
 app.get('/api/concerts', (req, res) => {
   const concerts = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/concerts.json')));
   res.json(concerts);
 });
 
+// Page formulaire achat billet
 app.get('/acheter/:id', (req, res) => {
   const concerts = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/concerts.json')));
   const concert = concerts.find(c => c.id == req.params.id);
@@ -45,7 +46,12 @@ app.get('/acheter/:id', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="fr">
-    <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Acheter un billet</title><link rel="stylesheet" href="/css/style.css" /></head>
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Acheter un billet</title>
+      <link rel="stylesheet" href="/css/style.css" />
+    </head>
     <body>
       <header>Babi4Show</header>
       <div class="container">
@@ -67,6 +73,7 @@ app.get('/acheter/:id', (req, res) => {
   `);
 });
 
+// Traitement du formulaire d'achat
 app.post('/acheter/:id', async (req, res) => {
   const concerts = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/concerts.json')));
   const concert = concerts.find(c => c.id == req.params.id);
@@ -83,11 +90,13 @@ app.post('/acheter/:id', async (req, res) => {
     timestamp: new Date().toISOString(),
   };
 
+  // Enregistre l'achat dans data/achats.json
   const achatsPath = path.join(__dirname, 'data/achats.json');
   const achats = fs.existsSync(achatsPath) ? JSON.parse(fs.readFileSync(achatsPath)) : [];
   achats.push(achat);
   fs.writeFileSync(achatsPath, JSON.stringify(achats, null, 2));
 
+  // Prépare les données pour QR code
   const qrData = JSON.stringify({
     artiste: achat.artiste,
     nom: achat.nom,
@@ -98,6 +107,7 @@ app.post('/acheter/:id', async (req, res) => {
     timestamp: achat.timestamp,
   });
 
+  // Génération fichier QR code
   const filename = `${achat.nom.replace(/ /g, "_")}_${Date.now()}.png`;
   const qrDir = path.join(__dirname, 'public/qrcodes');
   if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
@@ -105,9 +115,11 @@ app.post('/acheter/:id', async (req, res) => {
 
   await QRCode.toFile(qrPath, qrData);
 
+  // URL publique du QR code + raccourcisseur
   const qrUrl = `https://${HOSTNAME}/qrcodes/${filename}`;
   const shortUrl = await shortenUrl(qrUrl);
 
+  // Message WhatsApp avec lien raccourci
   const whatsappMessage = encodeURIComponent(
     `🎟️ Babi4Show - Billet\n` +
     `Nom : ${achat.nom}\n` +
@@ -118,10 +130,16 @@ app.post('/acheter/:id', async (req, res) => {
     `👉 Ton QR Code :\n${shortUrl}`
   );
 
+  // Page de confirmation
   res.send(`
     <!DOCTYPE html>
     <html lang="fr">
-    <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Achat confirmé</title><link rel="stylesheet" href="/css/style.css" /></head>
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Achat confirmé</title>
+      <link rel="stylesheet" href="/css/style.css" />
+    </head>
     <body>
       <header>Babi4Show - Confirmation</header>
       <div class="container" style="text-align:center;">
@@ -131,7 +149,7 @@ app.post('/acheter/:id', async (req, res) => {
         <img src="/qrcodes/${filename}" alt="QR Code" style="width:200px;" />
         <p>📲 Tu peux l’envoyer via WhatsApp :</p>
         <a href="https://wa.me/?text=${whatsappMessage}" target="_blank"><button>Envoyer sur WhatsApp</button></a>
-        <br><br>
+        <br /><br />
         <a href="/"><button>Retour à l'accueil</button></a>
       </div>
     </body>
